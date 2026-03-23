@@ -258,9 +258,9 @@ On the attacker machine, we must run this command. Any traffic from the client i
 
 > NOTE - NFQUEUE (Netfilter Queue) is a feature in the Linux networking stack that allows packets to be passed from the kernel to user-space programs for inspection, modification, or decision-making.
 
-`iptables -I FORWARD -p tcp --dport 4433 -j NFQUEUE --queue-num 0`
+`iptables -I FORWARD -p tcp --dst <SERVER_IP> --dport 4433 -j NFQUEUE --queue-num 0`
 
-> NOTE - It is important to run `iptables -D FORWARD -p tcp --dport 4433 -j NFQUEUE --queue-num 0` on the attacker machine once you are done with the experiment. This deletes the entry from the forwarding iptable.
+> NOTE - It is important to run `iptables -D FORWARD -p tcp --dst <SERVER_IP> --dport 4433 -j NFQUEUE --queue-num 0` on the attacker machine once you are done with the experiment. This deletes the entry from the forwarding iptable.
 
 
 ```
