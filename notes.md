@@ -218,7 +218,7 @@ The math is identical — the only difference is the size of N. This is why key 
 openssl s_server \
   -key /freak/server_key.pem \
   -cert /freak/server_cert.pem \
-  -cipher 'HIGH' \
+  -cipher 'HIGH:EXPORT' \
   -serverpref \
   -tls1_2 \
   -accept 4433
@@ -231,6 +231,7 @@ openssl s_server \
 ```sh
 openssl s_client \
   -connect <server-ip>:4433 \
+  -cipher 'HIGH:EXPORT'
   -tls1_2
 ```
 
