@@ -230,7 +230,7 @@ openssl s_server \
 - Run the TLS testing client.
 ```sh
 openssl s_client \
-  -connect <server-ip>:4433 \
+  -connect <server-ip>:443 \
   -cipher 'HIGH:EXPORT'
   -tls1_2
 ```
