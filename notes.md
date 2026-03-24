@@ -221,7 +221,7 @@ openssl s_server \
   -cipher 'HIGH:EXPORT' \
   -serverpref \
   -tls1_2 \
-  -accept 4433
+  -accept 443
 ```
 
 **For running the client**
