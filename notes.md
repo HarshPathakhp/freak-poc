@@ -212,7 +212,7 @@ The math is identical — the only difference is the size of N. This is why key 
 
 **For running the server**
 - Build the docker image: `docker build -t freak-demo .` This is a one-time operation.
-- Run the server container: `docker run -it -p 4433:4433 freak-demo`
+- Run the server container: `docker run -it -p 443:443 freak-demo`
 - Run the TLS testing server.
 ```sh
 openssl s_server \
@@ -255,13 +255,13 @@ This server is configured with only strong ciphers — HIGH grade only. It has n
 
 ## Attacker Setup
 
-On the attacker machine, we must run this command. Any traffic from the client is going to flow via the attacker machine (because the client connects to attacker's wifi hotspot, or via other means, such as ARP spoofing). The following command says - "If any TCP packet comes to attacker's system that is destined to port 4433, then instead of forwarding it, send it to NFQUEUE 0". Our attacker scapy script listens to this queue for incoming packets, and will modify the ClientHello message before forwarding it to server.
+On the attacker machine, we must run this command. Any traffic from the client is going to flow via the attacker machine (because the client connects to attacker's wifi hotspot, or via other means, such as ARP spoofing). The following command says - "If any TCP packet comes to attacker's system that is destined to port 443, then instead of forwarding it, send it to NFQUEUE 0". Our attacker scapy script listens to this queue for incoming packets, and will modify the ClientHello message before forwarding it to server.
 
 > NOTE - NFQUEUE (Netfilter Queue) is a feature in the Linux networking stack that allows packets to be passed from the kernel to user-space programs for inspection, modification, or decision-making.
 
-`iptables -I FORWARD -p tcp --dst <SERVER_IP> --dport 4433 -j NFQUEUE --queue-num 0`
+`iptables -I FORWARD -p tcp --dst <SERVER_IP> --dport 443 -j NFQUEUE --queue-num 0`
 
-> NOTE - It is important to run `iptables -D FORWARD -p tcp --dst <SERVER_IP> --dport 4433 -j NFQUEUE --queue-num 0` on the attacker machine once you are done with the experiment. This deletes the entry from the forwarding iptable.
+> NOTE - It is important to run `iptables -D FORWARD -p tcp --dst <SERVER_IP> --dport 443 -j NFQUEUE --queue-num 0` on the attacker machine once you are done with the experiment. This deletes the entry from the forwarding iptable.
 
 
 ```
@@ -270,7 +270,7 @@ On the attacker machine, we must run this command. Any traffic from the client i
 | `iptables` | The Linux firewall/packet filtering tool |
 | `-I FORWARD` | **Insert** a rule into the **FORWARD** chain |
 | `-p tcp` | Match only **TCP** packets |
-| `--dport 4433` | Match only packets destined for **port 4433** |
+| `--dport 443` | Match only packets destined for **port 443** |
 | `-j NFQUEUE` | **Jump** to the NFQUEUE target (hand packet to userspace) |
 | `--queue-num 0` | Send to queue number **0** (our script listens on this queue) |
 
@@ -298,7 +298,7 @@ Packet arrives → iptables FORWARD chain → NFQUEUE → our script
 1. Listen on NFQUEUE
 Sit and wait for packets to arrive from iptables. Every packet that matches our iptables rule gets handed to our script.
 2. For each packet, ask: is this a TLS ClientHello?
-Not every TCP packet on port 4433 is a ClientHello — there are ACKs, data packets, etc. We only care about the one packet that contains the ClientHello. Everything else should be forwarded untouched.
+Not every TCP packet on port 443 is a ClientHello — there are ACKs, data packets, etc. We only care about the one packet that contains the ClientHello. Everything else should be forwarded untouched.
 3. If it is a ClientHello, parse it
 Navigate through the raw bytes to find where the cipher suite list starts. As we discussed, this requires skipping the TLS header, handshake header, client version, client random, and session ID.
 4. Modify the cipher suite list
